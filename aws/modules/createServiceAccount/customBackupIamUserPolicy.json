@@ -1,0 +1,51 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "iam:GenerateCredentialReport",
+                "iam:GetPolicyVersion",
+                "iam:GetAccountPasswordPolicy",
+                "iam:GetMFADevice",
+                "iam:GetServiceLastAccessedDetailsWithEntities",
+                "iam:GenerateServiceLastAccessedDetails",
+                "iam:GetServiceLastAccessedDetails",
+                "iam:CreateUser",
+                "iam:GetGroup",
+                "iam:GetContextKeysForPrincipalPolicy",
+                "iam:GetOrganizationsAccessReport",
+                "iam:CreateAccessKey",
+                "iam:GetServiceLinkedRoleDeletionStatus",
+                "iam:SimulateCustomPolicy",
+                "iam:SimulatePrincipalPolicy",
+                "iam:GenerateOrganizationsAccessReport",
+                "iam:GetAccountEmailAddress",
+                "iam:GetCloudFrontPublicKey",
+                "iam:GetAccountAuthorizationDetails",
+                "iam:GetCredentialReport",
+                "iam:GetSAMLProvider",
+                "iam:ListAccessKeys",
+                "iam:GetServerCertificate",
+                "iam:GetRole",
+                "iam:GetInstanceProfile",
+                "iam:GetPolicy",
+                "iam:GetAccessKeyLastUsed",
+                "iam:GetSSHPublicKey",
+                "iam:DeleteUserPolicy",
+                "iam:DeleteUser",
+                "iam:GetContextKeysForCustomPolicy",
+                "iam:GetUserPolicy",
+                "iam:ListGroupsForUser",
+                "iam:PutUserPolicy",
+                "iam:GetAccountName",
+                "iam:GetGroupPolicy",
+                "iam:GetUser",
+                "iam:GetOpenIDConnectProvider",
+                "iam:GetRolePolicy"
+            ],
+            "Resource": "*"
+        }
+    ]
+}

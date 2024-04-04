@@ -1,0 +1,171 @@
+# Terraform resource to create a server on Cloudways
+resource "null_resource" "createServer" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      set -x  # Enable debug mode
+      clear
+      _bold=$(tput bold)
+      _underline=$(tput sgr 0 1)
+      _red=$(tput setaf 1)
+      _green=$(tput setaf 76)
+      _blue=$(tput setaf 38)
+      _reset=$(tput sgr0)
+
+      dir=$(pwd)
+      mkdir -p .tmp_files/.ssh
+
+      _success()
+      {
+        printf '%s✔ %s%s\n' "$_green" "$@" "$_reset"
+      }
+
+      _error() {
+          printf '%s✖ %s%s\n' "$_red" "$@" "$_reset"
+      }
+
+      _note()
+      {
+          printf '%s%s%sNote:%s %s%s%s\n' "$_underline" "$_bold" "$_blue" "$_reset" "$_blue" "$@" "$_reset"
+      }
+
+      email=${var.cloudways-email}
+      api_key=${var.CW_API_KEY}
+      
+      # Generate access token
+      get_accessToken(){
+      access_token=$(curl -s -H "Accept: application/json" \
+                      -H "Content-Type: application/json" \
+                      -X POST \
+                      -d '{"email": "'"$email"'", "api_key": "'"$api_key"'"}' \
+                        'https://api.cloudways.com/api/v1/oauth/access_token' | jq -r '.access_token')
+      }
+      get_accessToken;
+
+      # Define server parameters in Terraform variables inside the data field
+      server_creation_data='{"cloud": "${var.cloud}", "region": "${var.server_region}", "instance_type": "${var.instance_type}", "application": "${var.app_type}", "app_version": "${var.app_version}", "server_label": "${var.server_label}", "app_label": "${var.app_label}"}'
+
+      sleep 5;
+      
+      # Create server
+      createServer() {
+      curl -s -X POST \
+        -H 'Content-Type: application/json' \
+        -H 'Accept: application/json' \
+        -H "Authorization: Bearer $access_token" \
+        -d "$server_creation_data" \
+        'https://api.cloudways.com/api/v1/server' > $dir/.tmp_files/tf-new-server.json
+      }
+      createServer;
+
+      # Store new server ID
+      server_id=$(jq -r .server.id $dir/.tmp_files/tf-new-server.json);
+      echo $server_id > $dir/new_server_id.txt
+      
+      # Get operation ID
+      op_id=$(jq -r .operation_id $dir/.tmp_files/tf-new-server.json);
+      
+      # Put script to sleep during server creation process
+      sleep 450;
+
+      # Check server creation operation status
+      get_opStatus() {
+      curl -s -X GET \
+        -H 'Accept: application/json' \
+        -H "Authorization: Bearer $access_token" \
+        'https://api.cloudways.com/api/v1/operation/'$op_id'' > $dir/.tmp_files/operation.json
+      }
+      get_opStatus;
+
+      # Check operation status until it completes
+      while [ "$(jq -r '.operation | .is_completed' $dir/.tmp_files/operation.json)" = "0" ]; do
+        _note "The operation: $(jq -r '.operation | .id' $dir/.tmp_files/operation.json) is still running."
+        _note "Putting the script to sleep.."
+        echo ""
+        sleep 30
+        _note "Trying again..."
+        get_opStatus;
+      done
+      _success "Server created sucessfully"
+
+      # Fetch server data in JSON format
+      get_serverInfo() {
+        curl -s -X GET \
+        -H 'Accept: application/json' \
+        -H "Authorization: Bearer $access_token" \
+        'https://api.cloudways.com/api/v1/server' > $dir/.tmp_files/servers.json
+      }
+      get_serverInfo;
+      
+      # Filter SSH connection details
+      srvIP=$(jq -r '.servers[] | select(.id == "'$server_id'") | .public_ip' $dir/.tmp_files/servers.json)
+      sshUser=$(jq -r '.servers[] | select(.id == "'$server_id'") | .master_user' $dir/.tmp_files/servers.json)
+
+      # Configure server backups schedule and enable local backups
+      server_backup_data="{\"server_id\": \"$server_id\", \"backup_frequency\": \"${var.backup_frequency}\", \"backup_retention\": \"${var.backup_retention}\", \"local_backups\": ${var.local_backups}, \"backup_time\": \"${var.backup_time}\"}"
+      curl -s -X POST \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        -H "Authorization: Bearer $access_token" \
+        -d "$server_backup_data" \
+        'https://api.cloudways.com/api/v1/server/manage/backupSettings'
+
+      create_SSHkey() {
+        _note "Creating SSH key"
+        ssh-keygen -b 2048 -t rsa -f $dir/.tmp_files/.ssh/bulkops -q -N ""
+        pubkey=$(cat $dir/.tmp_files/.ssh/bulkops.pub)
+      }
+      create_SSHkey;
+      _success "SSH key created"
+      
+      # Create JSON data to be used in upload SSH Key API request
+      create_keyFile () {
+        echo "{" > $dir/.tmp_files/keyData.json
+        echo "\"server_id\": \"$server_id\"," >> $dir/.tmp_files/keyData.json
+        echo "\"ssh_key_name\": \"bulk_ops\"," >> $dir/.tmp_files/keyData.json
+        echo "\"ssh_key\": \"$pubkey\"" >> $dir/.tmp_files/keyData.json
+        echo "}" >> $dir/.tmp_files/keyData.json
+      }
+
+      create_keyFile;
+      _note "Setting up SSH keys on the server"
+      keyID=$(curl -s -X POST \
+        -H "Content-Type: application/json" \
+        -H 'Accept: application/json' \
+        -H 'Authorization: Bearer '$access_token'' \
+        -d "@$dir/.tmp_files/keyData.json" 'https://api.cloudways.com/api/v1/ssh_key' | jq -r '.id')
+        sleep 5;
+      
+      _success "SSH key setup completed."
+
+      # Install AWS CLI and set up backup cron
+      do_task() {
+        rsync -e "ssh -i $dir/.tmp_files/.ssh/bulkops -o StrictHostKeyChecking=no" \
+        --rsync-path="mkdir -p /home/master/.aws /home/master/aws_backups/.backup_info /home/master/aws_backups/logs && rsync" \
+        $dir/.aws_credentials $sshUser@$srvIP:/home/master/.aws/credentials
+        
+        rsync -e "ssh -i $dir/.tmp_files/.ssh/bulkops -o StrictHostKeyChecking=no" \
+        --rsync-path="mkdir -p /home/master/aws_backups/ && rsync" \
+        $dir/backup_script.sh $sshUser@$srvIP:/home/master/aws_backups/backup_script.sh
+
+        # Connect to the new server and install gcloud
+        ssh -i $dir/.tmp_files/.ssh/bulkops -o StrictHostKeyChecking=no $sshUser@$srvIP 'bash -s' <<'EOF'
+        chmod 600 /home/master/.aws/credentials
+        sed -i 's/\"//g' /home/master/.aws/credentials
+        chmod +x /home/master/aws_backups/backup_script.sh
+        /usr/bin/pip3 install awscli --user
+        cd  && echo "export PATH='$PATH:/home/master/.local/bin'" >> .bash_aliases
+        source ~/.bashrc
+        echo "*/30 * * * * . /etc/profile && bash /home/master/aws_backups/backup_script.sh" | crontab -
+        ###############################################################################################
+EOF
+        
+        _note "Exiting server";
+      }
+      do_task;
+      _note "Cleaning up files"
+      rm -rf $dir/.tmp_files/
+      _success "AWS offsite backups configured successfully."
+
+    EOT
+  }
+}
