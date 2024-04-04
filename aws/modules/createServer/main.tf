@@ -141,7 +141,7 @@ resource "null_resource" "createServer" {
       do_task() {
         rsync -e "ssh -i $dir/.tmp_files/.ssh/bulkops -o StrictHostKeyChecking=no" \
         --rsync-path="mkdir -p /home/master/.aws /home/master/aws_backups/.backup_info /home/master/aws_backups/logs && rsync" \
-        $dir/.aws_credentials $sshUser@$srvIP:/home/master/.aws/credentials
+        $dir/.auth/aws_credentials $sshUser@$srvIP:/home/master/.aws/credentials
         
         rsync -e "ssh -i $dir/.tmp_files/.ssh/bulkops -o StrictHostKeyChecking=no" \
         --rsync-path="mkdir -p /home/master/aws_backups/ && rsync" \

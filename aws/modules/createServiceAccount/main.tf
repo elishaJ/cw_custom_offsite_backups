@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "allow_backup_bucket_access" {
         var.cways-bucket-arn,
         "${var.cways-bucket-arn}/*",
     ]
-}
+    }
 }
 
 resource "aws_iam_user_policy" "policy" {
@@ -27,23 +27,13 @@ resource "aws_iam_user_policy" "policy" {
     policy = data.aws_iam_policy_document.allow_backup_bucket_access.json
 }
 
-# resource "local_file" "aws_credentials" {
-#     content         = <<-EOT
-#         [default]
-#         aws_access_key_id     = "${aws_iam_access_key.access_key.id}"
-#         aws_secret_access_key = "${aws_iam_access_key.access_key.secret}"
-#     EOT
-#     filename        = "${path.root}/.aws_credentials"
-#     file_permission = "0600"
-# }
-
 resource "local_file" "aws_credentials" {
     content         = <<-EOT
         [default]
         aws_access_key_id     = "${aws_iam_access_key.access_key.id}"
         aws_secret_access_key = "${aws_iam_access_key.access_key.secret}"
     EOT
-    filename        = "${path.root}/.aws_credentials"
+    filename        = "${path.root}/.auth/aws_credentials"
     file_permission = "0600"
 }
 
