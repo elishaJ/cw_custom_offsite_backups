@@ -1,8 +1,8 @@
 <div align="center">
-<a href="https://aws.amazon.com/"><img src="https://qiita-user-contents.imgix.net/https%3A%2F%2Fqiita-image-store.s3.amazonaws.com%2F0%2F117479%2Fd45582b9-b95d-732b-ec18-77c79a5bb143.jpeg?ixlib=rb-4.0.0&auto=format&gif-q=60&q=75&s=5f69f4159c6eb8928cbc2bdaa40d0307" alt="Masterhead"></a>
+<a href="https://aws.amazon.com/"><img src="https://neelbhatt40.files.wordpress.com/2017/05/s3.png" alt="Image from neelbhatt.com"></a>
 </div>
 
-<h1 align="center"> Application backups on s3</h1>
+<h1 align="center"> Application backups on AWS</h1>
 
 
 This directory comprises HCL configuration files designed to create and manage Cloudways application backups stored in an S3 bucket. It streamlines the process of launching a new Cloudways server and configuring it to automatically upload application backups to AWS.
