@@ -5,30 +5,29 @@ variable "CW_API_KEY" {
 
 variable "CW_EMAIL" {
   type        = string
-  # default     = "elisha.jamil@cloudways.com"
   description = "Cloudways primary account email"
 }
 
 variable "GOOGLE_CREDENTIALS" {
   type = string
-  default = "/home/ali/my_projects/cw_custom_offsite_backups/gcp/.auth/cw-automations-29aec829be0d.json"
+  #default = <provide file path>
   description = "GCP service account key for terraform authentication"
 }
 
 variable "project-name" {
   type        = string
-  default     = "cw-automations"
+  #default     = <"PROJECT-NAME">
   description = "The name of the GCP project in which the resources will be created"
 }
 
 variable "region" {
   type        = string
-  default     = "us-central1"
+  #default     = "us-central1"
   description = "Default region for GCP project"
 }
 
 variable "zone" {
   type        = string
-  default     = "us-central1-c"
+  #default     = "us-central1-c"
   description = "Default zone for GCP project"
 }
