@@ -33,11 +33,11 @@ You will be prompted to provide the following credentials on code execution.
 * `CLOUDWAYS_API_KEY` API Key generated on [Cloudways Platform API](https://support.cloudways.com/en/articles/5136065-how-to-use-the-cloudways-api) Section
 
 #### 4. Cloudways server configuration
-Modify the new server configuration (size/region/provider) in `modules/createServer/variables.tf`
+Adjust the new server configurations (size/region/provider) in `modules/createServer/variables.tf`
 
 ### Deployment
 
-* Initialize the working directory by running the following in `aws` directory:
+* Initialize the working directory by running the following in `gcp` directory:
 
 ```bash
   terraform init
